@@ -16,7 +16,8 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5051",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GIPHY_API_KEY": "voaNIOg1u7ONPbckzWK71C48YqCOkhVP"
       }
     },
     "https": {
@@ -34,7 +35,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GIPHY_API_KEY": "voaNIOg1u7ONPbckzWK71C48YqCOkhVP"
       }
     }
   }

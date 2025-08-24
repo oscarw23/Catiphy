@@ -1,0 +1,144 @@
+﻿@page "/history"
+@using CatiphyWeb.Services
+@inject CatiphyApi Api
+@rendermode InteractiveServer
+
+<header class="topbar">
+        <h1 class="brand">CATIPHY</h1>
+    <div class="left">
+        <nav class="tabs">
+            <a class="tab" href="/">Buscar</a>
+            <a class="tab active" href="/history">Historial</a>
+        </nav>
+    </div>
+    <div class="right">
+        <a class="btn export" href='@Api.GetExportUrl("csv")' target="_blank" rel="noopener">
+            Exportar CSV
+        </a>
+
+
+    </div>
+</header>
+<h3 class="title">Historial de búsquedas</h3>
+
+@if (loading)
+{
+    <div class="card center">Cargando historial…</div>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="card error">Error: @error</div>
+}
+else
+{
+    <div class="meta">Total: <strong>@total</strong></div>
+
+    <div class="table-wrap">
+        <table class="table fixed">
+            <colgroup>
+                <col style="width:180px" />   @* Fecha *@
+                <col />                       @* Fact (flex) *@
+                <col style="width:180px" />   @* 3 palabras *@
+                <col style="width:420px" />   @* URL *@
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Fecha (UTC)</th>
+                    <th>Cat Fact</th>
+                    <th>3 palabras</th>
+                    <th>URL GIF</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (items.Count == 0)
+                {
+                    <tr><td colspan="4" class="muted">Sin registros.</td></tr>
+                }
+                else
+                {
+                    @foreach (var it in items)
+                    {
+                        <tr>
+                            <td>@it.searchedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="fact">@it.factText</td>
+                            <td>@it.threeWords</td>
+                            <td>
+                                <a class="link" href="@it.gifUrl" target="_blank" rel="noopener">@it.gifUrl</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pager">
+        <button class="btn secondary" disabled="@(!CanPrev)" @onclick="Prev">« Anterior</button>
+        <span>Página @currentPage de @totalPages</span>
+        <button class="btn secondary" disabled="@(!CanNext)" @onclick="Next">Siguiente »</button>
+
+        <div class="gap"></div>
+
+        <label class="muted">Por página</label>
+        <select class="input small" @bind="pageSize" @bind:after="() => _ = LoadPage(1)">
+            <option>10</option>
+            <option selected>20</option>
+            <option>50</option>
+        </select>
+    </div>
+}
+
+@code {
+    // Estado
+    bool loading;
+    string? error;
+
+    // Datos
+    List<HistoryItem> items = new();
+    int total;
+
+    // Paginación
+    int currentPage = 1;          // ojo: no usar "page" para evitar conflicto con @page
+    int pageSize = 20;
+    int totalPages => Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+    bool CanPrev => currentPage > 1;
+    bool CanNext => currentPage < totalPages;
+
+    protected override async Task OnInitializedAsync() => await LoadPage(1);
+
+    async Task Prev() => await LoadPage(currentPage - 1);
+    async Task Next() => await LoadPage(currentPage + 1);
+
+    async Task LoadPage(int targetPage)
+    {
+        loading = true; error = null; StateHasChanged();
+        try
+        {
+            currentPage = Math.Max(1, targetPage);
+            var skip = (currentPage - 1) * pageSize;
+
+            var res = await Api.GetHistoryAsync(skip, pageSize);
+            if (res is null)
+            {
+                error = "No se pudo obtener el historial.";
+                items.Clear();
+                total = 0;
+                return;
+            }
+
+            items = res.Value.items;
+            total = res.Value.total;
+
+            if (items.Count == 0 && total > 0 && currentPage > totalPages)
+                await LoadPage(totalPages);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

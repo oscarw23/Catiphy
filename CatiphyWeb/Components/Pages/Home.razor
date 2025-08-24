@@ -1,7 +1,195 @@
 ﻿@page "/"
+@using CatiphyWeb.Services
+@inject CatiphyApi Api
+@inject NavigationManager Nav
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+<div class="shell @(started ? "started" : "initial")">
+    <header class="topbar">
+        <h1 class="brand">CATIPHY</h1>
+        <nav class="tabs">
+            <a class="tab @(IsActive("/") ? "active" : "")" href="/">Buscar</a>
+            <a class="tab @(IsActive("/history") ? "active" : "")" href="/history">Historial</a>
+        </nav>
+    </header>
 
-<h1>Hello, world!</h1>
+    @if (!started)
+    {
+        <section class="hero">
+            <button class="lens" @onclick="Start"> <!-- solo inicia -->
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle>
+                    <line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+                </svg>
+            </button>
+            <div class="hint">Haz clic para buscar michis</div>
+        </section>
+    }
 
-Welcome to your new app.
+    @if (started)
+    {
+        <!-- Barra/controles -->
+        <section class="search-bar">
+            <div class="search-wrap">
+                <label class="qty">Cantidad de GIFs: </label>
+                <select class="qty-select"
+                        @bind="desired"
+                        @bind:after="() => _ = LoadBatch(desired)">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                </select>
+
+@* 
+                <button class="btn secondary" @onclick="NewFactBatch">Nuevo</button> *@
+            </div>
+        </section>
+
+        <section class="content">
+            @if (loading)
+            {
+                <div class="card center">Cargando…</div>
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="card error">Error: @error</div>
+            }
+            else
+            {
+                <div class="grid @(desired == 1 ? "one" : "two")">
+                    @foreach (var card in cards)
+                    {
+                        <article class="card">
+                            <div class="gif-wrap">
+                                @if (!string.IsNullOrWhiteSpace(card.GifUrl))
+                                {
+                                    <img class="gif" src="@card.GifUrl" alt="gif" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div class="gif-placeholder">Sin GIF</div>
+                                }
+                            </div>
+
+                            <div class="fact-col">
+                                <p class="fact">@card.Fact</p>
+                                <div class="controls">
+                                    <button class="btn"
+                                            disabled="@(loading || card.IsRefreshing)"
+                                            @onclick="() => RefreshGif(card)">
+                                        @(card.IsRefreshing ? "Actualizando..." : "Refrescar GIF")
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+            }
+        </section>
+    }
+</div>
+
+@code {
+    bool started;
+    bool loading;
+    string? error;
+
+    // 1 por defecto (cumple la prueba). El usuario puede subir a 2–4.
+    int desired = 1;
+
+    class CardVM
+    {
+        public string Fact { get; set; } = "";
+        public string Three { get; set; } = "";
+        public string? GifUrl { get; set; }
+        public bool IsRefreshing { get; set; }
+    }
+    List<CardVM> cards = new();
+
+    bool IsActive(string href) => Nav.Uri.EndsWith(href, StringComparison.OrdinalIgnoreCase);
+
+    async Task Start()
+    {
+        started = true;
+        await LoadBatch(desired);
+    }
+
+    async Task OnDesiredChanged(ChangeEventArgs _)
+    {
+        // Recalcula con la nueva cantidad manteniendo el flujo de la prueba
+        await LoadBatch(desired);
+    }
+
+    async Task NewFactBatch()
+    {
+        await LoadBatch(desired);
+    }
+
+    async Task LoadBatch(int count)
+    {
+        loading = true; error = null; cards.Clear(); StateHasChanged();
+
+        try
+        {
+            // Trae N facts aleatorios y por cada uno genera GIF con sus 3 palabras (persistiendo)
+            var tasks = Enumerable.Range(0, count).Select(async _ =>
+            {
+                var f = await Api.GetFactAsync();
+                if (f is null) return null;
+
+                var three = First3(f.fact);
+                var url = await Api.GetGifUrlAsync(three, f.fact); // con 'fact' => guarda en BD
+
+                return new CardVM { Fact = f.fact, Three = three, GifUrl = url };
+            });
+
+            var results = await Task.WhenAll(tasks);
+            cards = results.Where(x => x is not null)!.ToList()!;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    async Task RefreshGif(CardVM vm)
+    {
+        var idx = cards.IndexOf(vm);
+        if (idx < 0) return;
+
+        try
+        {
+            vm.IsRefreshing = true;
+            var prev = vm.GifUrl;
+            vm.GifUrl = null;
+            StateHasChanged();
+
+            var url = await Api.GetGifUrlAsync(vm.Three, vm.Fact, prev);
+            idx = cards.IndexOf(vm);
+            if (idx >= 0) cards[idx].GifUrl = url;
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { vm.IsRefreshing = false; StateHasChanged(); }
+    }
+
+    
+
+
+
+    static string First3(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var cleaned = text.Trim().TrimEnd('.', ',', ';', ':', '!', '?');
+        var parts = System.Text.RegularExpressions.Regex
+            .Split(cleaned, @"\s+")
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Take(3);
+        return string.Join(' ', parts);
+    }
+}
