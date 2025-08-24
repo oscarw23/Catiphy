@@ -1,5 +1,6 @@
 ﻿using Catiphy.Infrastructure.Clients;
 using Microsoft.AspNetCore.Mvc;
+using Catiphy.Application.Interfaces;
 
 namespace Catiphy.Controllers;
 

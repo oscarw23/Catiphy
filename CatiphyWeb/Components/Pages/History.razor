@@ -1,5 +1,6 @@
 ﻿@page "/history"
 @using CatiphyWeb.Services
+@using CatiphyWeb.Dtos
 @inject CatiphyApi Api
 @rendermode InteractiveServer
 
@@ -36,10 +37,10 @@ else
     <div class="table-wrap">
         <table class="table fixed">
             <colgroup>
-                <col style="width:180px" />   @* Fecha *@
-                <col />                       @* Fact (flex) *@
-                <col style="width:180px" />   @* 3 palabras *@
-                <col style="width:420px" />   @* URL *@
+                <col style="width:180px" />  
+                <col />                      
+                <col style="width:180px" />  
+                <col style="width:420px" />  
             </colgroup>
             <thead>
                 <tr>
@@ -94,11 +95,11 @@ else
     string? error;
 
     // Datos
-    List<HistoryItem> items = new();
+    List<HistoryItemDto> items = new();
     int total;
 
     // Paginación
-    int currentPage = 1;          // ojo: no usar "page" para evitar conflicto con @page
+    int currentPage = 1;          
     int pageSize = 20;
     int totalPages => Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
     bool CanPrev => currentPage > 1;

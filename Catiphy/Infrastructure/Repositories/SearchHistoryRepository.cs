@@ -2,7 +2,6 @@
 using Catiphy.Infrastructure.Sql;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using System.Data.Common;
 
 namespace Catiphy.Infrastructure.Repositories;
 
@@ -54,7 +53,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
     }
 
 
-    public async Task<(IEnumerable<SearchHistoryItem> Items, int Total)> GetPagedAsync(
+    public async Task<(IEnumerable<SearchHistoryItemDtoDto> Items, int Total)> GetPagedAsync(
         int skip,
         int take)
     {
@@ -85,7 +84,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
                                     OFFSET @skip ROWS
                                     FETCH NEXT @take ROWS ONLY;";
 
-        var items = new List<SearchHistoryItem>(take);
+        var items = new List<SearchHistoryItemDtoDto>(take);
 
         using (var pageCmd = new SqlCommand(pageSql, conn)
         {
@@ -106,7 +105,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
                 var threeWords = reader.GetString(2);
                 var gifUrl = reader.GetString(3);
 
-                items.Add(new SearchHistoryItem(searchedAtUtc, factText, threeWords, gifUrl));
+                items.Add(new SearchHistoryItemDtoDto(searchedAtUtc, factText, threeWords, gifUrl));
             }
         }
 
@@ -115,9 +114,9 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
         return (items, total);
     }
 
-    public async Task<IReadOnlyList<SearchHistoryItem>> GetAllAsync()
+    public async Task<IReadOnlyList<SearchHistoryItemDtoDto>> GetAllAsync()
     {
-        var list = new List<SearchHistoryItem>();
+        var list = new List<SearchHistoryItemDtoDto>();
 
         await using var conn = (SqlConnection)_connectionFactory.Create();
         await conn.OpenAsync();
@@ -143,7 +142,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
             var gif = rd.IsDBNull(ordGif) ? "" : rd.GetString(ordGif);
 
             // Usa tu record/DTO existente:
-            list.Add(new SearchHistoryItem(searchedAt, fact, three, gif));
+            list.Add(new SearchHistoryItemDtoDto(searchedAt, fact, three, gif));
         }
 
         return list;

@@ -1,11 +1,9 @@
-﻿using System.Text.Json;
+﻿using Catiphy.Application.Interfaces; 
+using System.Text.Json;
+
 
 namespace Catiphy.Infrastructure.Clients;
-public interface IGiphyClient
-{
-    //Task<string?> SearchFirstGifUrlAsync(string query);
-    Task<string?> SearchRandomGifUrlAsync(string query, string? excludeUrl = null);
-}
+
 
 public sealed class GiphyClient : IGiphyClient
 {
@@ -24,7 +22,7 @@ public sealed class GiphyClient : IGiphyClient
         // hasta 3 intentos para no repetir
         for (int attempt = 0; attempt < 3; attempt++)
         {
-            var offset = Random.Shared.Next(0, 50); // mueve la “ventana” de resultados
+            var offset = Random.Shared.Next(0, 50); 
             var url = $"v1/gifs/search?api_key={Uri.EscapeDataString(_apiKey)}&q={Uri.EscapeDataString(query)}&limit=1&offset={offset}&rating=g";
 
             var resp = await _http.GetAsync(url);
@@ -44,7 +42,7 @@ public sealed class GiphyClient : IGiphyClient
                     if (string.IsNullOrWhiteSpace(gifUrl)) return null;
 
                     if (excludeUrl is null || !gifUrl.Equals(excludeUrl, StringComparison.OrdinalIgnoreCase))
-                        return gifUrl; // distinto → lo devolvemos
+                        return gifUrl; 
                 }
             }
         }

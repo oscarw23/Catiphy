@@ -7,13 +7,13 @@ builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents(options =>
     {
-        options.DetailedErrors = true;   // <-- añade esto
+        options.DetailedErrors = true;
     });
 
 
 builder.Services.AddHttpClient<CatiphyApi>(c =>
 {
-    c.BaseAddress = new Uri("https://localhost:44360/"); // <-- tu API
+    c.BaseAddress = new Uri("https://localhost:44360/"); //API
 });
 
 var app = builder.Build();
@@ -23,19 +23,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
-// Si tienes auth:
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// >>> Agrega esta línea:
 app.UseAntiforgery();
-
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 

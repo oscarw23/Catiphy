@@ -1,12 +1,12 @@
 ﻿using Catiphy.Infrastructure.Clients;
 using Catiphy.Infrastructure.Repositories;
+using Catiphy.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
 public sealed class GifController(IGiphyClient giphy, ISearchHistoryRepository repo) : ControllerBase
 {
-    // GET /api/gif?query=...&fact=...&prev=...
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] string query, [FromQuery] string? fact = null, [FromQuery] string? prev = null)
     {
@@ -16,7 +16,7 @@ public sealed class GifController(IGiphyClient giphy, ISearchHistoryRepository r
         if (string.IsNullOrWhiteSpace(gifUrl)) return NoContent();
 
         if (!string.IsNullOrWhiteSpace(fact))
-            await repo.InsertAsync(DateTime.UtcNow, fact, query, gifUrl);
+            await repo.InsertAsync(DateTime.Now, fact, query, gifUrl);
 
         return Ok(new { gifUrl });
     }

@@ -19,11 +19,10 @@ public class HistoryController : ControllerBase
         _repo = repo;
     }
 
-    /// <summary>
-    /// Devuelve el historial de búsquedas paginado y ordenado por fecha DESC.
-    /// </summary>
 
-    [HttpGet]
+
+
+    [HttpGet]   // Devuelve el historial de búsquedas paginado y ordenado por fecha DESC.
     public async Task<ActionResult<object>> Get([FromQuery] int skip = 0, [FromQuery] int take = 10)
     {
         if (skip < 0) skip = 0;
@@ -31,28 +30,26 @@ public class HistoryController : ControllerBase
         if (take > MaxTake) take = MaxTake;
 
         var (items, total) = await _repo.GetPagedAsync(skip, take);
-
-        // Estructura: { items: [...], total: N }
         return Ok(new
         {
             items,
             total
         });
     }
-    [HttpGet("export")]
+    [HttpGet("export")]// Exporta la tabla historial
     public async Task<IActionResult> ExportToCsv()
     {
-        var all = await _repo.GetAllAsync();   // ← usa el método nuevo
+        var all = await _repo.GetAllAsync();
 
         var sb = new StringBuilder();
-        sb.AppendLine("Fecha (UTC),Cat Fact,3 palabras,URL GIF");
+        sb.AppendLine("Fecha,Cat Fact,3 palabras,URL GIF");
 
         foreach (var x in all)
         {
-            sb.Append(EscapeCsv(x.SearchedAtUtc.ToString("yyyy-MM-dd HH:mm:ss"))).Append(',');
-            sb.Append(EscapeCsv(x.FactText)).Append(',');
-            sb.Append(EscapeCsv(x.ThreeWords)).Append(',');
-            sb.Append(EscapeCsv(x.GifUrl)).AppendLine();
+            sb.Append(ExtporToCsv(x.SearchedAtUtc.ToString("yyyy-MM-dd HH:mm:ss"))).Append(';');
+            sb.Append(ExtporToCsv(x.FactText)).Append(';');
+            sb.Append(ExtporToCsv(x.ThreeWords)).Append(';');
+            sb.Append(ExtporToCsv(x.GifUrl)).AppendLine();
         }
 
         // UTF-8 con BOM para que Excel en Windows abra bien los acentos
@@ -61,8 +58,7 @@ public class HistoryController : ControllerBase
         return File(bytes, "text/csv; charset=utf-8", "HistorialCatiphy.csv");
     }
 
-    // Helper CSV muy simple (dobla comillas y envuelve si hace falta)
-    private static string EscapeCsv(string? s)
+    private static string ExtporToCsv(string? s)
     {
         s ??= string.Empty;
         bool needsQuotes = s.Contains(',') || s.Contains('"') || s.Contains('\n') || s.Contains('\r');

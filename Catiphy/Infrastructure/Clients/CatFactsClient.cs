@@ -1,10 +1,8 @@
-﻿namespace Catiphy.Infrastructure.Clients;
-public record CatFactDto(string fact, int length);
+﻿using Catiphy.Application.Dtos;
+using Catiphy.Application.Interfaces;
+namespace Catiphy.Infrastructure.Clients;
 
-public interface ICatFactsClient
-{
-    Task<CatFactDto?> GetRandomAsync();
-}
+
 
 public sealed class CatFactsClient(HttpClient http) : ICatFactsClient
 {

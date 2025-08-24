@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using CatiphyWeb.Dtos
 @using CatiphyWeb.Services
 @inject CatiphyApi Api
 @inject NavigationManager Nav
@@ -16,7 +17,7 @@
     @if (!started)
     {
         <section class="hero">
-            <button class="lens" @onclick="Start"> <!-- solo inicia -->
+            <button class="lens" @onclick="Start">
                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle>
                     <line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
@@ -40,9 +41,6 @@
                     <option value="3">3</option>
                     <option value="4">4</option>
                 </select>
-
-@* 
-                <button class="btn secondary" @onclick="NewFactBatch">Nuevo</button> *@
             </div>
         </section>
 
@@ -96,17 +94,11 @@
     bool loading;
     string? error;
 
-    // 1 por defecto (cumple la prueba). El usuario puede subir a 2–4.
+    // El usuario puede subir a 2–4.
     int desired = 1;
 
-    class CardVM
-    {
-        public string Fact { get; set; } = "";
-        public string Three { get; set; } = "";
-        public string? GifUrl { get; set; }
-        public bool IsRefreshing { get; set; }
-    }
-    List<CardVM> cards = new();
+
+    List<CardVMDto> cards = new();
 
     bool IsActive(string href) => Nav.Uri.EndsWith(href, StringComparison.OrdinalIgnoreCase);
 
@@ -118,7 +110,6 @@
 
     async Task OnDesiredChanged(ChangeEventArgs _)
     {
-        // Recalcula con la nueva cantidad manteniendo el flujo de la prueba
         await LoadBatch(desired);
     }
 
@@ -133,7 +124,6 @@
 
         try
         {
-            // Trae N facts aleatorios y por cada uno genera GIF con sus 3 palabras (persistiendo)
             var tasks = Enumerable.Range(0, count).Select(async _ =>
             {
                 var f = await Api.GetFactAsync();
@@ -142,7 +132,7 @@
                 var three = First3(f.fact);
                 var url = await Api.GetGifUrlAsync(three, f.fact); // con 'fact' => guarda en BD
 
-                return new CardVM { Fact = f.fact, Three = three, GifUrl = url };
+                return new CardVMDto { Fact = f.fact, Three = three, GifUrl = url };
             });
 
             var results = await Task.WhenAll(tasks);
@@ -158,7 +148,7 @@
         }
     }
 
-    async Task RefreshGif(CardVM vm)
+    async Task RefreshGif(CardVMDto vm)
     {
         var idx = cards.IndexOf(vm);
         if (idx < 0) return;
