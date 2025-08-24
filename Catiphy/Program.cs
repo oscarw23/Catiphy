@@ -1,3 +1,4 @@
+using Catiphy.Application.Interfaces;
 using Catiphy.Infrastructure.Clients;
 using Catiphy.Infrastructure.Repositories;
 using Catiphy.Infrastructure.Sql;

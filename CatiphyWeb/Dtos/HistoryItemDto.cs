@@ -1,4 +1,4 @@
 ﻿namespace CatiphyWeb.Dtos
 {
-    public record HistoryItemDto(DateTime searchedAtUtc, string factText, string threeWords, string gifUrl);
+    public record HistoryItemDto(DateTime Fecha, string factText, string threeWords, string gifUrl);
 }

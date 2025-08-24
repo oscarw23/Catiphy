@@ -44,7 +44,7 @@ else
             </colgroup>
             <thead>
                 <tr>
-                    <th>Fecha (UTC)</th>
+                    <th>Fecha</th>
                     <th>Cat Fact</th>
                     <th>3 palabras</th>
                     <th>URL GIF</th>
@@ -60,7 +60,7 @@ else
                     @foreach (var it in items)
                     {
                         <tr>
-                            <td>@it.searchedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@it.Fecha.ToString("yyyy-MM-dd HH:mm:ss")</td>
                             <td class="fact">@it.factText</td>
                             <td>@it.threeWords</td>
                             <td>

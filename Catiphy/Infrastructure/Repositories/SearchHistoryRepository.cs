@@ -18,7 +18,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
     }
 
     public async Task InsertAsync(
-        DateTime searchedAtUtc,
+        DateTime Fecha,
         string factText,
         string threeWords,
         string gifUrl)
@@ -35,8 +35,8 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
         await conn.OpenAsync().ConfigureAwait(false);
 
         const string sql = @"
-                                INSERT INTO dbo.SearchHistory (SearchedAtUtc, FactText, ThreeWords, GifUrl)
-                                VALUES (@searchedAtUtc, @factText, @threeWords, @gifUrl);";
+                                INSERT INTO dbo.SearchHistory (Fecha, FactText, ThreeWords, GifUrl)
+                                VALUES (@Fecha, @factText, @threeWords, @gifUrl);";
 
         using var cmd = new SqlCommand(sql, conn)
         {
@@ -44,7 +44,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
             CommandTimeout = 30
         };
 
-        cmd.Parameters.Add(new SqlParameter("@searchedAtUtc", SqlDbType.DateTime2) { Value = searchedAtUtc });
+        cmd.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTime2) { Value = Fecha });
         cmd.Parameters.Add(new SqlParameter("@factText", SqlDbType.NVarChar, -1) { Value = factText });      // -1 = NVARCHAR(MAX)
         cmd.Parameters.Add(new SqlParameter("@threeWords", SqlDbType.NVarChar, 128) { Value = threeWords });
         cmd.Parameters.Add(new SqlParameter("@gifUrl", SqlDbType.NVarChar, 512) { Value = gifUrl });
@@ -53,7 +53,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
     }
 
 
-    public async Task<(IEnumerable<SearchHistoryItemDtoDto> Items, int Total)> GetPagedAsync(
+    public async Task<(IEnumerable<SearchHistoryItemDto> Items, int Total)> GetPagedAsync(
         int skip,
         int take)
     {
@@ -76,15 +76,15 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
             total = scalar is int i ? i : Convert.ToInt32(scalar ?? 0);
         }
 
-        // 2) Página ordenada por fecha DESC
+        //Página ordenada por fecha DESC
         const string pageSql = @"
-                                    SELECT SearchedAtUtc, FactText, ThreeWords, GifUrl
+                                    SELECT Fecha, FactText, ThreeWords, GifUrl
                                     FROM dbo.SearchHistory
-                                    ORDER BY SearchedAtUtc DESC
+                                    ORDER BY Fecha DESC
                                     OFFSET @skip ROWS
                                     FETCH NEXT @take ROWS ONLY;";
 
-        var items = new List<SearchHistoryItemDtoDto>(take);
+        var items = new List<SearchHistoryItemDto>(take);
 
         using (var pageCmd = new SqlCommand(pageSql, conn)
         {
@@ -100,12 +100,12 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
             while (await reader.ReadAsync().ConfigureAwait(false))
             {
                 // Ordinales en el mismo orden que el SELECT
-                var searchedAtUtc = reader.GetDateTime(0);
+                var Fecha = reader.GetDateTime(0);
                 var factText = reader.GetString(1);
                 var threeWords = reader.GetString(2);
                 var gifUrl = reader.GetString(3);
 
-                items.Add(new SearchHistoryItemDtoDto(searchedAtUtc, factText, threeWords, gifUrl));
+                items.Add(new SearchHistoryItemDto(Fecha, factText, threeWords, gifUrl));
             }
         }
 
@@ -114,22 +114,22 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
         return (items, total);
     }
 
-    public async Task<IReadOnlyList<SearchHistoryItemDtoDto>> GetAllAsync()
+    public async Task<IReadOnlyList<SearchHistoryItemDto>> GetAllAsync()
     {
-        var list = new List<SearchHistoryItemDtoDto>();
+        var list = new List<SearchHistoryItemDto>();
 
         await using var conn = (SqlConnection)_connectionFactory.Create();
         await conn.OpenAsync();
 
         const string sql = @"
-            SELECT SearchedAtUtc, FactText, ThreeWords, GifUrl
+            SELECT Fecha, FactText, ThreeWords, GifUrl
             FROM dbo.SearchHistory
-            ORDER BY SearchedAtUtc DESC;";
+            ORDER BY Fecha DESC;";
 
         await using var cmd = new SqlCommand(sql, conn);
 
         await using var rd = await cmd.ExecuteReaderAsync();
-        var ordDate = rd.GetOrdinal("SearchedAtUtc");
+        var ordDate = rd.GetOrdinal("Fecha");
         var ordFact = rd.GetOrdinal("FactText");
         var ordThree = rd.GetOrdinal("ThreeWords");
         var ordGif = rd.GetOrdinal("GifUrl");
@@ -142,7 +142,7 @@ public sealed class SearchHistoryRepository : ISearchHistoryRepository
             var gif = rd.IsDBNull(ordGif) ? "" : rd.GetString(ordGif);
 
             // Usa tu record/DTO existente:
-            list.Add(new SearchHistoryItemDtoDto(searchedAt, fact, three, gif));
+            list.Add(new SearchHistoryItemDto(searchedAt, fact, three, gif));
         }
 
         return list;

@@ -46,7 +46,7 @@ public class HistoryController : ControllerBase
 
         foreach (var x in all)
         {
-            sb.Append(ExtporToCsv(x.SearchedAtUtc.ToString("yyyy-MM-dd HH:mm:ss"))).Append(';');
+            sb.Append(ExtporToCsv(x.Fecha.ToString("yyyy-MM-dd HH:mm:ss"))).Append(';');
             sb.Append(ExtporToCsv(x.FactText)).Append(';');
             sb.Append(ExtporToCsv(x.ThreeWords)).Append(';');
             sb.Append(ExtporToCsv(x.GifUrl)).AppendLine();

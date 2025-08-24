@@ -1,7 +1,7 @@
 ﻿namespace Catiphy.Application.Dtos
 {
-    public record SearchHistoryItemDtoDto(
-        DateTime SearchedAtUtc,
+    public record SearchHistoryItemDto(
+        DateTime Fecha,
         string FactText,
         string ThreeWords,
         string GifUrl

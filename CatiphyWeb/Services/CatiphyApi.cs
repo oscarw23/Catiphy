@@ -1,9 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Globalization;
 using CatiphyWeb.Dtos;
 
 namespace CatiphyWeb.Services;
+
 public class CatiphyApi
 {
     private readonly HttpClient _http;
@@ -26,12 +28,11 @@ public class CatiphyApi
         return json.TryGetProperty("gifUrl", out var p) ? p.GetString() : null;
     }
 
-
     public async Task<(List<HistoryItemDto> items, int total)?> GetHistoryAsync(
         int skip,
-        int take, 
+        int take,
         string? q = null,
-        DateTime? FromDate = null, 
+        DateTime? FromDate = null,
         DateTime? ToDate = null)
     {
         var qs = new List<string> { $"skip={skip}", $"take={take}" };
@@ -50,17 +51,13 @@ public class CatiphyApi
         {
             foreach (var el in itemsProp.EnumerateArray())
             {
-                DateTime searchedAt = default;
-                if (el.TryGetProperty("searchedAtUtc", out var d) && d.ValueKind == JsonValueKind.String)
-                    searchedAt = DateTime.Parse(d.GetString()!);
-                else if (d.ValueKind == JsonValueKind.Number)
-                    searchedAt = d.GetDateTime();
+                var searchedAt = ReadDate(el, "searchedAtUtc", "Fecha", "fecha");
 
                 var fact = el.TryGetProperty("factText", out var f) ? (f.GetString() ?? "") : "";
                 var three = el.TryGetProperty("threeWords", out var t) ? (t.GetString() ?? "") : "";
                 var gifUrl = el.TryGetProperty("gifUrl", out var g) ? (g.GetString() ?? "") : "";
 
-                list.Add(new HistoryItemDto(searchedAt, fact, three, gifUrl)); // record posicional
+                list.Add(new HistoryItemDto(searchedAt, fact, three, gifUrl));
             }
         }
 
@@ -71,7 +68,32 @@ public class CatiphyApi
         return (list, total);
     }
 
-
+    private static DateTime ReadDate(JsonElement obj, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (obj.TryGetProperty(name, out var p))
+            {
+                if (p.ValueKind == JsonValueKind.String)
+                {
+                    var s = p.GetString();
+                    if (DateTime.TryParse(
+                            s,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                            out var dt))
+                    {
+                        return dt;
+                    }
+                }
+                if (p.ValueKind == JsonValueKind.Number || p.ValueKind == JsonValueKind.Undefined)
+                {
+                    try { return p.GetDateTime(); } catch { }
+                }
+            }
+        }
+        return DateTime.MinValue;
+    }
 
     public string GetExportUrl(string fmt = "csv")
     {
